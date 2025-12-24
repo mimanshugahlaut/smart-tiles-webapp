@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Smart Tile System</title>
+
+    <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+
+    <!-- ================= NAVBAR ================= -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
@@ -16,21 +22,24 @@
                 </svg>
                 <span>Smart Tile System</span>
             </div>
+
             <div class="nav-menu">
                 <a href="{{ url_for('dashboard') }}" class="nav-link active">Dashboard</a>
-                <a href="{{ url_for('profile') }}" class="nav-link">Profile</a>
-                <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
             </div>
         </div>
     </nav>
 
+    <!-- ================= DASHBOARD ================= -->
     <div class="dashboard-container">
+
+        <!-- Header -->
         <div class="dashboard-header">
             <div>
                 <h1>Energy Dashboard</h1>
                 <p>Monitor your piezoelectric tile performance</p>
             </div>
+
             <div class="dashboard-actions">
                 <button id="simulateBtn" class="btn btn-primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,22 +47,23 @@
                     </svg>
                     Simulate Footstep
                 </button>
+
                 <button id="clearDataBtn" class="btn btn-secondary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
                     </svg>
                     Clear Data
                 </button>
             </div>
         </div>
 
+        <!-- ================= STATS ================= -->
         <div class="stats-grid">
+
             <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                    </svg>
+                <div class="stat-icon energy">
+                    ⚡
                 </div>
                 <div class="stat-content">
                     <h3>Total Energy</h3>
@@ -63,39 +73,30 @@
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
+                <div class="stat-icon steps">
+                    👣
                 </div>
                 <div class="stat-content">
-                    <h3>Footsteps Today</h3>
+                    <h3>Total Footsteps</h3>
                     <p class="stat-value" id="stepsToday">0</p>
-                    <span class="stat-change positive" id="stepChange">Start stepping!</span>
+                    <span class="stat-change" id="totalSteps">Start stepping!</span>
                 </div>
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
+                <div class="stat-icon avg">
+                    📊
                 </div>
                 <div class="stat-content">
-                    <h3>Avg per Step</h3>
+                    <h3>Avg Energy / Step</h3>
                     <p class="stat-value" id="avgEnergy">0.00 mJ</p>
-                    <span class="stat-change" id="totalSteps">Total: 0 steps</span>
+                    <span class="stat-change">Efficiency</span>
                 </div>
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
+                <div class="stat-icon value">
+                    ₹
                 </div>
                 <div class="stat-content">
                     <h3>Energy Value</h3>
@@ -103,86 +104,45 @@
                     <span class="stat-change">@ ₹8/kWh</span>
                 </div>
             </div>
+
         </div>
 
-        <div class="content-grid">
-            <div class="chart-card">
-                <div class="card-header">
-                    <h2>Energy Production (Real-time)</h2>
-                    <select class="time-range" id="timeRange">
-                        <option value="24h">Last 24 Hours</option>
-                        <option value="50">Last 50 Steps</option>
-                        <option value="all">All Data</option>
-                    </select>
-                </div>
-                <div class="chart-container">
-                    <canvas id="energyChart"></canvas>
-                </div>
+        <!-- ================= CHART ================= -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h2>Energy Production</h2>
             </div>
-
-            <div class="info-card">
-                <div class="card-header">
-                    <h2>System Status</h2>
-                </div>
-                <div class="status-list">
-                    <div class="status-item">
-                        <span class="status-indicator online"></span>
-                        <div>
-                            <strong>Simulation Mode</strong>
-                            <p>Active and running</p>
-                        </div>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-indicator online"></span>
-                        <div>
-                            <strong>Data Collection</strong>
-                            <p>Recording footsteps</p>
-                        </div>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-indicator online"></span>
-                        <div>
-                            <strong>Database</strong>
-                            <p>Connected</p>
-                        </div>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-indicator online"></span>
-                        <div>
-                            <strong>User Session</strong>
-                            <p>Active</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <canvas id="energyChart"></canvas>
         </div>
 
+        <!-- ================= TABLE ================= -->
         <div class="data-table-card">
             <div class="card-header">
                 <h2>Recent Footsteps</h2>
-                <span class="record-count" id="recordCount">0 records</span>
+                <span id="recordCount">0 records</span>
             </div>
-            <div class="table-container">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Time</th>
-                            <th>Force (N)</th>
-                            <th>Displacement (mm)</th>
-                            <th>Energy (mJ)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                        <tr class="no-data">
-                            <td colspan="5">No data yet. Click "Simulate Footstep" to start!</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Force (N)</th>
+                        <th>Displacement (mm)</th>
+                        <th>Energy (mJ)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr>
+                        <td colspan="4">No data yet. Click "Simulate Footstep".</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+
     </div>
 
+    <!-- Dashboard JS -->
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
 </body>
 </html>
