@@ -7,9 +7,6 @@
 
     <!-- Dashboard CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -37,23 +34,16 @@
         <div class="dashboard-header">
             <div>
                 <h1>Energy Dashboard</h1>
-                <p>Monitor your piezoelectric tile performance</p>
+                <p>Monitor your piezoelectric tile performance (Simulation Mode)</p>
             </div>
 
             <div class="dashboard-actions">
                 <button id="simulateBtn" class="btn btn-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                    </svg>
-                    Simulate Footstep
+                    ⚡ Simulate Footstep
                 </button>
 
                 <button id="clearDataBtn" class="btn btn-secondary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                    </svg>
-                    Clear Data
+                    🗑️ Clear Data
                 </button>
             </div>
         </div>
@@ -62,9 +52,7 @@
         <div class="stats-grid">
 
             <div class="stat-card">
-                <div class="stat-icon energy">
-                    ⚡
-                </div>
+                <div class="stat-icon energy">⚡</div>
                 <div class="stat-content">
                     <h3>Total Energy</h3>
                     <p class="stat-value" id="totalEnergy">0.00 mJ</p>
@@ -73,9 +61,7 @@
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon steps">
-                    👣
-                </div>
+                <div class="stat-icon steps">👣</div>
                 <div class="stat-content">
                     <h3>Total Footsteps</h3>
                     <p class="stat-value" id="stepsToday">0</p>
@@ -84,9 +70,7 @@
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon avg">
-                    📊
-                </div>
+                <div class="stat-icon avg">📊</div>
                 <div class="stat-content">
                     <h3>Avg Energy / Step</h3>
                     <p class="stat-value" id="avgEnergy">0.00 mJ</p>
@@ -95,9 +79,7 @@
             </div>
 
             <div class="stat-card">
-                <div class="stat-icon value">
-                    ₹
-                </div>
+                <div class="stat-icon value">₹</div>
                 <div class="stat-content">
                     <h3>Energy Value</h3>
                     <p class="stat-value" id="energyValue">₹0.00</p>
@@ -105,14 +87,6 @@
                 </div>
             </div>
 
-        </div>
-
-        <!-- ================= CHART ================= -->
-        <div class="chart-card">
-            <div class="card-header">
-                <h2>Energy Production</h2>
-            </div>
-            <canvas id="energyChart"></canvas>
         </div>
 
         <!-- ================= TABLE ================= -->
