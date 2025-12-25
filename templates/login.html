@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+
     <div class="auth-container">
         <div class="auth-card">
+
             <div class="auth-header">
                 <div class="logo-container">
                     <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,28 +42,20 @@
                     <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
 
-                <div class="form-options">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="remember">
-                        <span>Remember me</span>
-                    </label>
-                    <a href="{{ url_for('forgot_password') }}" class="link">Forgot password?</a>
-                </div>
-
                 <button type="submit" class="btn btn-primary">
                     <span class="btn-text">Sign In</span>
-                    <span class="btn-loader" style="display: none;">
-                        <span class="spinner"></span>
-                    </span>
                 </button>
             </form>
 
             <div class="auth-footer">
-                <p>Don't have an account? <a href="{{ url_for('register') }}" class="link">Sign Up</a></p>
+                <p>
+                    Don't have an account?
+                    <a href="{{ url_for('register') }}" class="link">Sign Up</a>
+                </p>
             </div>
+
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>
