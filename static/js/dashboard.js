@@ -1,26 +1,24 @@
-// Dashboard functionality - Optimized for cloud deployment
+// ===============================
+// Smart Tile Dashboard (FINAL)
+// Optimized for Smooth Performance
+// ===============================
+
 let energyChart = null;
+const MAX_POINTS = 20;     // Max points on X-axis
+const Y_AXIS_MAX = 4000;   // Fixed Y-axis (mJ)
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Initialize chart only once
+document.addEventListener('DOMContentLoaded', () => {
     initializeChart();
-
-    // Initial load (only once)
     loadDashboardData();
 
-    // Button listeners
-    const simulateBtn = document.getElementById('simulateBtn');
-    const clearDataBtn = document.getElementById('clearDataBtn');
-    const timeRange = document.getElementById('timeRange');
-
-    if (simulateBtn) simulateBtn.addEventListener('click', simulateFootstep);
-    if (clearDataBtn) clearDataBtn.addEventListener('click', clearAllData);
-    if (timeRange) timeRange.addEventListener('change', loadDashboardData);
+    document.getElementById('simulateBtn')?.addEventListener('click', simulateFootstep);
+    document.getElementById('clearDataBtn')?.addEventListener('click', clearAllData);
+    document.getElementById('timeRange')?.addEventListener('change', loadDashboardData);
 });
 
-// --------------------------------------------------
-// CHART INITIALIZATION (NO ANIMATION = FAST)
-// --------------------------------------------------
+// ===============================
+// CHART INITIALIZATION
+// ===============================
 function initializeChart() {
     const ctx = document.getElementById('energyChart');
     if (!ctx) return;
@@ -32,8 +30,8 @@ function initializeChart() {
             datasets: [{
                 label: 'Energy Generated (mJ)',
                 data: [],
-                borderColor: 'rgb(102, 126, 234)',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.15)',
                 borderWidth: 2,
                 tension: 0.3,
                 fill: true,
@@ -45,44 +43,57 @@ function initializeChart() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true },
-                tooltip: { intersect: false }
+                legend: { display: true }
             },
             scales: {
-                y: { beginAtZero: true },
-                x: { ticks: { maxRotation: 45 } }
+                x: {
+                    ticks: { maxRotation: 45 }
+                },
+                y: {
+                    min: 0,
+                    max: Y_AXIS_MAX,
+                    ticks: {
+                        stepSize: 500
+                    },
+                    title: {
+                        display: true,
+                        text: 'Energy (mJ)'
+                    }
+                }
             }
         }
     });
 }
 
-// --------------------------------------------------
-// SIMULATE FOOTSTEP (NO EXTRA API CALLS)
-// --------------------------------------------------
+// ===============================
+// SIMULATE FOOTSTEP
+// ===============================
 async function simulateFootstep() {
     const btn = document.getElementById('simulateBtn');
     const originalText = btn.innerHTML;
 
     try {
         btn.disabled = true;
-        btn.innerText = "Simulating...";
+        btn.innerText = 'Simulating...';
 
-        const response = await fetch('/simulate-step', { method: 'POST' });
-        const result = await response.json();
+        const res = await fetch('/simulate-step', { method: 'POST' });
+        const result = await res.json();
 
         if (!result.success) {
             showNotification('error', 'Simulation failed');
             return;
         }
 
-        // Update UI directly (NO reload)
-        addTableRow(result);
+        // Add data to chart
+        addChartPoint(`Step ${result.step}`, result.energy_mj);
+
+        // Update stats visually
         incrementStats(result.energy_mj);
 
-        showNotification(
-            'success',
-            `⚡ Step ${result.step} → ${result.energy_mj} mJ`
-        );
+        // Add table row
+        addTableRow(result);
+
+        showNotification('success', `⚡ ${result.energy_mj} mJ generated`);
 
     } catch {
         showNotification('error', 'Server error');
@@ -92,9 +103,9 @@ async function simulateFootstep() {
     }
 }
 
-// --------------------------------------------------
-// LOAD DASHBOARD DATA (MANUAL ONLY)
-// --------------------------------------------------
+// ===============================
+// LOAD DASHBOARD DATA (MANUAL)
+// ===============================
 async function loadDashboardData() {
     try {
         const range = document.getElementById('timeRange')?.value || 50;
@@ -105,9 +116,9 @@ async function loadDashboardData() {
 
         if (!data.success) return;
 
-        // Chart update (fast)
-        energyChart.data.labels = data.chart_data.labels;
-        energyChart.data.datasets[0].data = data.chart_data.energy;
+        // Update chart (trimmed)
+        energyChart.data.labels = data.chart_data.labels.slice(-MAX_POINTS);
+        energyChart.data.datasets[0].data = data.chart_data.energy.slice(-MAX_POINTS);
         energyChart.update('none');
 
         // Stats
@@ -121,9 +132,24 @@ async function loadDashboardData() {
     }
 }
 
-// --------------------------------------------------
-// UI UPDATE HELPERS
-// --------------------------------------------------
+// ===============================
+// CHART HELPERS
+// ===============================
+function addChartPoint(label, value) {
+    energyChart.data.labels.push(label);
+    energyChart.data.datasets[0].data.push(value);
+
+    if (energyChart.data.labels.length > MAX_POINTS) {
+        energyChart.data.labels.shift();
+        energyChart.data.datasets[0].data.shift();
+    }
+
+    energyChart.update('none');
+}
+
+// ===============================
+// UI HELPERS
+// ===============================
 function updateStatistics(stats) {
     document.getElementById('totalEnergy').textContent = `${stats.total_energy_mj} mJ`;
     document.getElementById('energyWh').textContent = `${stats.total_energy_wh} Wh`;
@@ -134,11 +160,14 @@ function updateStatistics(stats) {
 }
 
 function incrementStats(energy) {
-    const totalEnergyEl = document.getElementById('totalEnergy');
-    const current = parseFloat(totalEnergyEl.textContent) || 0;
-    totalEnergyEl.textContent = `${(current + energy).toFixed(2)} mJ`;
+    const el = document.getElementById('totalEnergy');
+    const current = parseFloat(el.textContent) || 0;
+    el.textContent = `${(current + energy).toFixed(2)} mJ`;
 }
 
+// ===============================
+// TABLE
+// ===============================
 function updateTable(records) {
     const tbody = document.getElementById('dataTableBody');
     if (!records.length) {
@@ -173,13 +202,14 @@ function addTableRow(data) {
     while (tbody.children.length > 10) tbody.removeChild(tbody.lastChild);
 }
 
-// --------------------------------------------------
+// ===============================
 // CLEAR DATA
-// --------------------------------------------------
+// ===============================
 async function clearAllData() {
     if (!confirm('Clear all data?')) return;
 
     await fetch('/clear-data', { method: 'POST' });
+
     energyChart.data.labels = [];
     energyChart.data.datasets[0].data = [];
     energyChart.update('none');
@@ -190,15 +220,14 @@ async function clearAllData() {
     showNotification('success', 'Data cleared');
 }
 
-// --------------------------------------------------
-// UTILS
-// --------------------------------------------------
+// ===============================
+// UTILITIES
+// ===============================
 function showNotification(type, msg) {
     const div = document.createElement('div');
     div.className = `notification ${type}`;
     div.textContent = msg;
     document.body.appendChild(div);
-
     setTimeout(() => div.remove(), 2500);
 }
 
