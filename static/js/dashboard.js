@@ -1,8 +1,30 @@
+// ==================================================
+// Smart Tile Dashboard (FINAL – VISUALLY LOCKED)
+// Chart.js v4 – No expansion, no upscaling
+// ==================================================
+
 let energyChart = null;
 
 const MAX_POINTS = 20;
 const Y_AXIS_MAX = 4000;
 
+// --------------------------------------------------
+// PLUGIN: HARD LOCK Y-AXIS (CRITICAL FIX)
+// --------------------------------------------------
+const lockYAxisPlugin = {
+    id: 'lockYAxis',
+    afterBuildTicks(chart) {
+        const y = chart.scales.y;
+        if (!y) return;
+
+        y.min = 0;
+        y.max = Y_AXIS_MAX;
+    }
+};
+
+// --------------------------------------------------
+// INIT
+// --------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     initChart();
     loadDashboardData();
@@ -12,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('timeRange')?.addEventListener('change', loadDashboardData);
 });
 
-// ===============================
-// INITIALIZE CHART (LOCKED)
-// ===============================
+// --------------------------------------------------
+// CHART INITIALIZATION (LOCKED SCALE)
+// --------------------------------------------------
 function initChart() {
     const ctx = document.getElementById('energyChart');
     if (!ctx) return;
@@ -24,7 +46,7 @@ function initChart() {
         data: {
             labels: [],
             datasets: [{
-                label: 'Energy (mJ)',
+                label: 'Energy Generated (mJ)',
                 data: [],
                 borderColor: '#667eea',
                 backgroundColor: 'rgba(102,126,234,0.15)',
@@ -35,47 +57,52 @@ function initChart() {
             }]
         },
         options: {
-            animation: false,
             responsive: true,
+            animation: false,
             maintainAspectRatio: false,
             parsing: false,
-            plugins: {
-                legend: { display: true }
-            },
+
             scales: {
                 x: {
-                    bounds: 'ticks'
+                    ticks: {
+                        maxRotation: 45,
+                        autoSkip: true
+                    }
                 },
                 y: {
-                    beginAtZero: true,
                     min: 0,
                     max: Y_AXIS_MAX,
-                    grace: 0,
                     ticks: {
-                        stepSize: 500
+                        stepSize: 500,
+                        autoSkip: false
+                    },
+                    grid: {
+                        drawBorder: true
+                    },
+                    title: {
+                        display: true,
+                        text: 'Energy (mJ)'
                     }
                 }
+            },
+
+            plugins: {
+                legend: {
+                    display: true
+                }
             }
-        }
+        },
+        plugins: [lockYAxisPlugin] // 🔒 HARD LOCK
     });
 }
 
-// ===============================
-// FORCE Y-AXIS LOCK
-// ===============================
-function lockYAxis() {
-    if (!energyChart) return;
-    energyChart.options.scales.y.min = 0;
-    energyChart.options.scales.y.max = Y_AXIS_MAX;
-}
-
-// ===============================
-// SIMULATE STEP
-// ===============================
+// --------------------------------------------------
+// SIMULATE FOOTSTEP
+// --------------------------------------------------
 async function simulateFootstep() {
     const btn = document.getElementById('simulateBtn');
     btn.disabled = true;
-    btn.innerText = 'Simulating...';
+    btn.innerText = 'Simulating…';
 
     try {
         const res = await fetch('/simulate-step', { method: 'POST' });
@@ -83,23 +110,22 @@ async function simulateFootstep() {
 
         if (!data.success) throw new Error();
 
-        const energy = Math.min(data.energy_mj, Y_AXIS_MAX);
+        const safeEnergy = Math.min(data.energy_mj, Y_AXIS_MAX);
 
         energyChart.data.labels.push(`Step ${data.step}`);
-        energyChart.data.datasets[0].data.push(energy);
+        energyChart.data.datasets[0].data.push(safeEnergy);
 
         if (energyChart.data.labels.length > MAX_POINTS) {
             energyChart.data.labels.shift();
             energyChart.data.datasets[0].data.shift();
         }
 
-        lockYAxis();
         energyChart.update('none');
 
         addTableRow(data);
-        incrementStats(energy);
+        incrementStats(safeEnergy);
 
-        showNotification('success', `⚡ ${energy} mJ generated`);
+        showNotification('success', `⚡ ${safeEnergy} mJ generated`);
 
     } catch {
         showNotification('error', 'Simulation failed');
@@ -109,9 +135,9 @@ async function simulateFootstep() {
     }
 }
 
-// ===============================
-// LOAD DATA
-// ===============================
+// --------------------------------------------------
+// LOAD DASHBOARD DATA
+// --------------------------------------------------
 async function loadDashboardData() {
     try {
         const res = await fetch('/get-energy-data?limit=50');
@@ -126,26 +152,19 @@ async function loadDashboardData() {
                 .slice(-MAX_POINTS)
                 .map(v => Math.min(v, Y_AXIS_MAX));
 
-        lockYAxis();
         energyChart.update('none');
 
         updateStatistics(data.statistics);
         updateTable(data.recent_records);
 
     } catch {
-        showNotification('error', 'Load failed');
+        showNotification('error', 'Failed to load data');
     }
 }
 
-// ===============================
-// HELPERS
-// ===============================
-function incrementStats(v) {
-    const el = document.getElementById('totalEnergy');
-    const curr = parseFloat(el.textContent) || 0;
-    el.textContent = `${(curr + v).toFixed(2)} mJ`;
-}
-
+// --------------------------------------------------
+// UI HELPERS
+// --------------------------------------------------
 function updateStatistics(s) {
     document.getElementById('totalEnergy').textContent = `${s.total_energy_mj} mJ`;
     document.getElementById('energyWh').textContent = `${s.total_energy_wh} Wh`;
@@ -155,8 +174,23 @@ function updateStatistics(s) {
     document.getElementById('energyValue').textContent = `₹${s.energy_value_inr}`;
 }
 
+function incrementStats(v) {
+    const el = document.getElementById('totalEnergy');
+    const curr = parseFloat(el.textContent) || 0;
+    el.textContent = `${(curr + v).toFixed(2)} mJ`;
+}
+
+// --------------------------------------------------
+// TABLE
+// --------------------------------------------------
 function updateTable(records) {
     const body = document.getElementById('dataTableBody');
+
+    if (!records.length) {
+        body.innerHTML = `<tr><td colspan="5">No data yet</td></tr>`;
+        return;
+    }
+
     body.innerHTML = records.slice(0, 10).map(r => `
         <tr>
             <td>${r.step}</td>
@@ -171,6 +205,7 @@ function updateTable(records) {
 function addTableRow(d) {
     const body = document.getElementById('dataTableBody');
     const row = document.createElement('tr');
+
     row.innerHTML = `
         <td>${d.step}</td>
         <td>Just now</td>
@@ -178,22 +213,36 @@ function addTableRow(d) {
         <td>—</td>
         <td>${Math.min(d.energy_mj, Y_AXIS_MAX)}</td>
     `;
+
     body.prepend(row);
     while (body.children.length > 10) body.lastChild.remove();
 }
 
+// --------------------------------------------------
+// CLEAR DATA
+// --------------------------------------------------
 async function clearAllData() {
+    if (!confirm('Clear all data?')) return;
+
     await fetch('/clear-data', { method: 'POST' });
+
     energyChart.data.labels = [];
     energyChart.data.datasets[0].data = [];
-    lockYAxis();
     energyChart.update('none');
+
+    document.getElementById('dataTableBody').innerHTML =
+        `<tr><td colspan="5">No data</td></tr>`;
+
+    showNotification('success', 'Data cleared');
 }
 
+// --------------------------------------------------
+// NOTIFICATIONS
+// --------------------------------------------------
 function showNotification(type, msg) {
-    const d = document.createElement('div');
-    d.className = `notification ${type}`;
-    d.textContent = msg;
-    document.body.appendChild(d);
-    setTimeout(() => d.remove(), 2500);
+    const n = document.createElement('div');
+    n.className = `notification ${type}`;
+    n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 2500);
 }
