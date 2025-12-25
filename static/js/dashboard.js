@@ -1,11 +1,12 @@
 // ===============================
-// Smart Tile Dashboard (FINAL)
-// Optimized for Smooth Performance
+// Smart Tile Dashboard (FINAL FIX)
+// Y-axis CLAMPED + DATA CLAMPED
 // ===============================
 
 let energyChart = null;
-const MAX_POINTS = 20;     // Max points on X-axis
-const Y_AXIS_MAX = 4000;   // Fixed Y-axis (mJ)
+
+const MAX_POINTS = 20;       // X-axis limit
+const Y_AXIS_MAX = 4000;     // mJ hard limit
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeChart();
@@ -52,6 +53,7 @@ function initializeChart() {
                 y: {
                     min: 0,
                     max: Y_AXIS_MAX,
+                    clamp: true,                 // ⭐ FORCE NO EXPANSION
                     ticks: {
                         stepSize: 500
                     },
@@ -84,18 +86,16 @@ async function simulateFootstep() {
             return;
         }
 
-        // Add data to chart
-        addChartPoint(`Step ${result.step}`, result.energy_mj);
+        // 🔒 CLAMP ENERGY VALUE
+        const safeEnergy = Math.min(result.energy_mj, Y_AXIS_MAX);
 
-        // Update stats visually
-        incrementStats(result.energy_mj);
-
-        // Add table row
+        addChartPoint(`Step ${result.step}`, safeEnergy);
+        incrementStats(safeEnergy);
         addTableRow(result);
 
-        showNotification('success', `⚡ ${result.energy_mj} mJ generated`);
+        showNotification('success', `⚡ ${safeEnergy} mJ generated`);
 
-    } catch {
+    } catch (err) {
         showNotification('error', 'Server error');
     } finally {
         btn.disabled = false;
@@ -104,7 +104,7 @@ async function simulateFootstep() {
 }
 
 // ===============================
-// LOAD DASHBOARD DATA (MANUAL)
+// LOAD DASHBOARD DATA
 // ===============================
 async function loadDashboardData() {
     try {
@@ -116,15 +116,17 @@ async function loadDashboardData() {
 
         if (!data.success) return;
 
-        // Update chart (trimmed)
-        energyChart.data.labels = data.chart_data.labels.slice(-MAX_POINTS);
-        energyChart.data.datasets[0].data = data.chart_data.energy.slice(-MAX_POINTS);
+        // 🔒 CLAMP DATA FROM BACKEND
+        const labels = data.chart_data.labels.slice(-MAX_POINTS);
+        const values = data.chart_data.energy
+            .slice(-MAX_POINTS)
+            .map(v => Math.min(v, Y_AXIS_MAX));
+
+        energyChart.data.labels = labels;
+        energyChart.data.datasets[0].data = values;
         energyChart.update('none');
 
-        // Stats
         updateStatistics(data.statistics);
-
-        // Table
         updateTable(data.recent_records);
 
     } catch {
@@ -170,6 +172,7 @@ function incrementStats(energy) {
 // ===============================
 function updateTable(records) {
     const tbody = document.getElementById('dataTableBody');
+
     if (!records.length) {
         tbody.innerHTML = `<tr><td colspan="5">No data yet</td></tr>`;
         return;
@@ -195,7 +198,7 @@ function addTableRow(data) {
         <td>Just now</td>
         <td>—</td>
         <td>—</td>
-        <td>${data.energy_mj}</td>
+        <td>${Math.min(data.energy_mj, Y_AXIS_MAX)}</td>
     `;
 
     tbody.prepend(row);
