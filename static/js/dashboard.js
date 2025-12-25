@@ -1,15 +1,10 @@
-// ===============================
-// Smart Tile Dashboard (FINAL FIX)
-// Y-axis CLAMPED + DATA CLAMPED
-// ===============================
-
 let energyChart = null;
 
-const MAX_POINTS = 20;       // X-axis limit
-const Y_AXIS_MAX = 4000;     // mJ hard limit
+const MAX_POINTS = 20;
+const Y_AXIS_MAX = 4000;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initializeChart();
+    initChart();
     loadDashboardData();
 
     document.getElementById('simulateBtn')?.addEventListener('click', simulateFootstep);
@@ -18,9 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===============================
-// CHART INITIALIZATION
+// INITIALIZE CHART (LOCKED)
 // ===============================
-function initializeChart() {
+function initChart() {
     const ctx = document.getElementById('energyChart');
     if (!ctx) return;
 
@@ -29,7 +24,7 @@ function initializeChart() {
         data: {
             labels: [],
             datasets: [{
-                label: 'Energy Generated (mJ)',
+                label: 'Energy (mJ)',
                 data: [],
                 borderColor: '#667eea',
                 backgroundColor: 'rgba(102,126,234,0.15)',
@@ -43,23 +38,21 @@ function initializeChart() {
             animation: false,
             responsive: true,
             maintainAspectRatio: false,
+            parsing: false,
             plugins: {
                 legend: { display: true }
             },
             scales: {
                 x: {
-                    ticks: { maxRotation: 45 }
+                    bounds: 'ticks'
                 },
                 y: {
+                    beginAtZero: true,
                     min: 0,
                     max: Y_AXIS_MAX,
-                    clamp: true,                 // ⭐ FORCE NO EXPANSION
+                    grace: 0,
                     ticks: {
                         stepSize: 500
-                    },
-                    title: {
-                        display: true,
-                        text: 'Energy (mJ)'
                     }
                 }
             }
@@ -68,120 +61,106 @@ function initializeChart() {
 }
 
 // ===============================
-// SIMULATE FOOTSTEP
+// FORCE Y-AXIS LOCK
+// ===============================
+function lockYAxis() {
+    if (!energyChart) return;
+    energyChart.options.scales.y.min = 0;
+    energyChart.options.scales.y.max = Y_AXIS_MAX;
+}
+
+// ===============================
+// SIMULATE STEP
 // ===============================
 async function simulateFootstep() {
     const btn = document.getElementById('simulateBtn');
-    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerText = 'Simulating...';
 
     try {
-        btn.disabled = true;
-        btn.innerText = 'Simulating...';
-
         const res = await fetch('/simulate-step', { method: 'POST' });
-        const result = await res.json();
+        const data = await res.json();
 
-        if (!result.success) {
-            showNotification('error', 'Simulation failed');
-            return;
+        if (!data.success) throw new Error();
+
+        const energy = Math.min(data.energy_mj, Y_AXIS_MAX);
+
+        energyChart.data.labels.push(`Step ${data.step}`);
+        energyChart.data.datasets[0].data.push(energy);
+
+        if (energyChart.data.labels.length > MAX_POINTS) {
+            energyChart.data.labels.shift();
+            energyChart.data.datasets[0].data.shift();
         }
 
-        // 🔒 CLAMP ENERGY VALUE
-        const safeEnergy = Math.min(result.energy_mj, Y_AXIS_MAX);
+        lockYAxis();
+        energyChart.update('none');
 
-        addChartPoint(`Step ${result.step}`, safeEnergy);
-        incrementStats(safeEnergy);
-        addTableRow(result);
+        addTableRow(data);
+        incrementStats(energy);
 
-        showNotification('success', `⚡ ${safeEnergy} mJ generated`);
+        showNotification('success', `⚡ ${energy} mJ generated`);
 
-    } catch (err) {
-        showNotification('error', 'Server error');
+    } catch {
+        showNotification('error', 'Simulation failed');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = originalText;
+        btn.innerText = 'Simulate Footstep';
     }
 }
 
 // ===============================
-// LOAD DASHBOARD DATA
+// LOAD DATA
 // ===============================
 async function loadDashboardData() {
     try {
-        const range = document.getElementById('timeRange')?.value || 50;
-        const limit = range === 'all' ? 1000 : range === '24h' ? 100 : 50;
-
-        const res = await fetch(`/get-energy-data?limit=${limit}`);
+        const res = await fetch('/get-energy-data?limit=50');
         const data = await res.json();
-
         if (!data.success) return;
 
-        // 🔒 CLAMP DATA FROM BACKEND
-        const labels = data.chart_data.labels.slice(-MAX_POINTS);
-        const values = data.chart_data.energy
-            .slice(-MAX_POINTS)
-            .map(v => Math.min(v, Y_AXIS_MAX));
+        energyChart.data.labels =
+            data.chart_data.labels.slice(-MAX_POINTS);
 
-        energyChart.data.labels = labels;
-        energyChart.data.datasets[0].data = values;
+        energyChart.data.datasets[0].data =
+            data.chart_data.energy
+                .slice(-MAX_POINTS)
+                .map(v => Math.min(v, Y_AXIS_MAX));
+
+        lockYAxis();
         energyChart.update('none');
 
         updateStatistics(data.statistics);
         updateTable(data.recent_records);
 
     } catch {
-        showNotification('error', 'Failed to load data');
+        showNotification('error', 'Load failed');
     }
 }
 
 // ===============================
-// CHART HELPERS
+// HELPERS
 // ===============================
-function addChartPoint(label, value) {
-    energyChart.data.labels.push(label);
-    energyChart.data.datasets[0].data.push(value);
-
-    if (energyChart.data.labels.length > MAX_POINTS) {
-        energyChart.data.labels.shift();
-        energyChart.data.datasets[0].data.shift();
-    }
-
-    energyChart.update('none');
-}
-
-// ===============================
-// UI HELPERS
-// ===============================
-function updateStatistics(stats) {
-    document.getElementById('totalEnergy').textContent = `${stats.total_energy_mj} mJ`;
-    document.getElementById('energyWh').textContent = `${stats.total_energy_wh} Wh`;
-    document.getElementById('stepsToday').textContent = stats.total_steps;
-    document.getElementById('avgEnergy').textContent = `${stats.avg_energy} mJ`;
-    document.getElementById('totalSteps').textContent = `Total: ${stats.total_steps}`;
-    document.getElementById('energyValue').textContent = `₹${stats.energy_value_inr}`;
-}
-
-function incrementStats(energy) {
+function incrementStats(v) {
     const el = document.getElementById('totalEnergy');
-    const current = parseFloat(el.textContent) || 0;
-    el.textContent = `${(current + energy).toFixed(2)} mJ`;
+    const curr = parseFloat(el.textContent) || 0;
+    el.textContent = `${(curr + v).toFixed(2)} mJ`;
 }
 
-// ===============================
-// TABLE
-// ===============================
+function updateStatistics(s) {
+    document.getElementById('totalEnergy').textContent = `${s.total_energy_mj} mJ`;
+    document.getElementById('energyWh').textContent = `${s.total_energy_wh} Wh`;
+    document.getElementById('stepsToday').textContent = s.total_steps;
+    document.getElementById('avgEnergy').textContent = `${s.avg_energy} mJ`;
+    document.getElementById('totalSteps').textContent = `Total: ${s.total_steps}`;
+    document.getElementById('energyValue').textContent = `₹${s.energy_value_inr}`;
+}
+
 function updateTable(records) {
-    const tbody = document.getElementById('dataTableBody');
-
-    if (!records.length) {
-        tbody.innerHTML = `<tr><td colspan="5">No data yet</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = records.slice(0, 10).map(r => `
+    const body = document.getElementById('dataTableBody');
+    body.innerHTML = records.slice(0, 10).map(r => `
         <tr>
             <td>${r.step}</td>
-            <td>${formatTime(r.time)}</td>
+            <td>${new Date(r.time).toLocaleTimeString()}</td>
             <td>${r.force}</td>
             <td>${r.displacement}</td>
             <td>${r.energy}</td>
@@ -189,51 +168,32 @@ function updateTable(records) {
     `).join('');
 }
 
-function addTableRow(data) {
-    const tbody = document.getElementById('dataTableBody');
+function addTableRow(d) {
+    const body = document.getElementById('dataTableBody');
     const row = document.createElement('tr');
-
     row.innerHTML = `
-        <td>${data.step}</td>
+        <td>${d.step}</td>
         <td>Just now</td>
         <td>—</td>
         <td>—</td>
-        <td>${Math.min(data.energy_mj, Y_AXIS_MAX)}</td>
+        <td>${Math.min(d.energy_mj, Y_AXIS_MAX)}</td>
     `;
-
-    tbody.prepend(row);
-    while (tbody.children.length > 10) tbody.removeChild(tbody.lastChild);
+    body.prepend(row);
+    while (body.children.length > 10) body.lastChild.remove();
 }
 
-// ===============================
-// CLEAR DATA
-// ===============================
 async function clearAllData() {
-    if (!confirm('Clear all data?')) return;
-
     await fetch('/clear-data', { method: 'POST' });
-
     energyChart.data.labels = [];
     energyChart.data.datasets[0].data = [];
+    lockYAxis();
     energyChart.update('none');
-
-    document.getElementById('dataTableBody').innerHTML =
-        `<tr><td colspan="5">No data</td></tr>`;
-
-    showNotification('success', 'Data cleared');
 }
 
-// ===============================
-// UTILITIES
-// ===============================
 function showNotification(type, msg) {
-    const div = document.createElement('div');
-    div.className = `notification ${type}`;
-    div.textContent = msg;
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 2500);
-}
-
-function formatTime(t) {
-    return new Date(t).toLocaleTimeString();
+    const d = document.createElement('div');
+    d.className = `notification ${type}`;
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2500);
 }
