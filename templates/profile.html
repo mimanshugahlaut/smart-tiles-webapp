@@ -2,69 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - Smart Tile System</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
 
-    <!-- ================= NAVBAR ================= -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <svg class="nav-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-                <span>Smart Tile System</span>
-            </div>
-
-            <div class="nav-menu">
-                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
-            </div>
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">
+            ⚡ Smart Tile System
         </div>
-    </nav>
-
-    <!-- ================= CONTENT ================= -->
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1>Profile</h1>
-            <p>User profile management (coming soon)</p>
-        </div>
-
-        <div class="profile-grid">
-
-            <div class="profile-card">
-                <h2>Account Information</h2>
-                <p>
-                    Profile editing, account details, and personal information
-                    management will be available in a future update.
-                </p>
-            </div>
-
-            <div class="profile-card">
-                <h2>Energy Statistics</h2>
-                <p>
-                    Your energy generation statistics are available on the
-                    dashboard and update in real-time during simulation.
-                </p>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
-                    Go to Dashboard
-                </a>
-            </div>
-
-            <div class="profile-card">
-                <h2>Account Status</h2>
-                <ul>
-                    <li>✔ Status: Active</li>
-                    <li>✔ Simulation Mode Enabled</li>
-                    <li>✔ Database Connected</li>
-                </ul>
-            </div>
-
+        <div class="nav-menu">
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('profile') }}" class="nav-link active">Profile</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
         </div>
     </div>
+</nav>
+
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <h1>My Profile</h1>
+        <p>Account & energy overview</p>
+    </div>
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <h3>Username</h3>
+            <p class="stat-value">{{ user.username }}</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Email</h3>
+            <p class="stat-value">{{ user.email }}</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Account Created</h3>
+            <p class="stat-value">{{ user.created_at.split(' ')[0] }}</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Footsteps</h3>
+            <p class="stat-value">{{ total_steps }}</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Energy</h3>
+            <p class="stat-value">{{ total_energy_mj }} mJ</p>
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>

@@ -130,6 +130,41 @@ def dashboard():
     return render_template('dashboard.html')
 
 # =====================================================
+# Profile Page
+# =====================================================
+@app.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT username, email, created_at FROM users WHERE id=?",
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT 
+            COUNT(*) AS total_steps,
+            COALESCE(SUM(energy_generated), 0) AS total_energy
+        FROM energy_data
+        WHERE user_id=?
+    """, (session['user_id'],))
+    stats = cursor.fetchone()
+
+    conn.close()
+
+    return render_template(
+        "profile.html",
+        user=user,
+        total_steps=stats["total_steps"],
+        total_energy_mj=round(stats["total_energy"] * 1000, 2)
+    )
+
+# =====================================================
 # ENERGY SIMULATION
 # =====================================================
 @app.route('/simulate-step', methods=['POST'])
@@ -137,9 +172,9 @@ def simulate_step():
     if 'user_id' not in session:
         return jsonify({'success': False}), 401
 
-    force = random.uniform(400, 800)              # Newton
-    displacement = random.uniform(0.002, 0.005)   # meters
-    energy_j = force * displacement                # Joules
+    force = random.uniform(400, 800)            # Newton
+    displacement = random.uniform(0.002, 0.005) # meters
+    energy_j = force * displacement              # Joules
 
     conn = get_db()
     cursor = conn.cursor()
@@ -165,7 +200,7 @@ def simulate_step():
     })
 
 # =====================================================
-# DASHBOARD DATA (FINAL, CORRECT)
+# DASHBOARD DATA (FINAL & CORRECT)
 # =====================================================
 @app.route('/get-energy-data')
 def get_energy_data():
@@ -176,7 +211,7 @@ def get_energy_data():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT footsteps, timestamp, force, displacement, energy_generated
+        SELECT footsteps, force, displacement, energy_generated
         FROM energy_data
         WHERE user_id=?
         ORDER BY footsteps DESC
@@ -192,12 +227,13 @@ def get_energy_data():
         WHERE user_id=?
     """, (session['user_id'],))
     stats = cursor.fetchone()
+
     conn.close()
 
     total_energy_mj = round(stats["total_energy_j"] * 1000, 2)
-    total_energy_wh = round(total_energy_mj / 3_600_000, 6)
+    total_energy_wh = round(stats["total_energy_j"] / 3600, 6)
     avg_energy = round(total_energy_mj / stats["total_steps"], 2) if stats["total_steps"] else 0
-    energy_value = round((total_energy_wh / 1000) * 8, 2)  # ₹8/kWh
+    energy_value = round(total_energy_wh * 8, 2)  # ₹8 per kWh
 
     return jsonify({
         "success": True,
