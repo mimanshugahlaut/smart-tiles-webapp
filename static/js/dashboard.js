@@ -1,6 +1,6 @@
 // =====================================
 // Smart Tile Dashboard (NO GRAPH VERSION)
-// Stable, Backend-Synced, Demo-Ready
+// FINAL – Stable, Backend-Synced
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // -------------------------------------
-// SIMULATE FOOTSTEP (NO FRONTEND MATH)
+// SIMULATE FOOTSTEP (BACKEND ONLY)
 // -------------------------------------
 async function simulateFootstep() {
     const btn = document.getElementById('simulateBtn');
@@ -29,11 +29,8 @@ async function simulateFootstep() {
             return;
         }
 
-        // ✅ Always reload backend data (single source of truth)
+        // ✅ ONLY reload from backend
         await loadDashboardData();
-
-        // Add latest row instantly for UX
-        addTableRow(data);
 
         showNotification(
             'success',
@@ -50,7 +47,7 @@ async function simulateFootstep() {
 }
 
 // -------------------------------------
-// LOAD DASHBOARD DATA (BACKEND ONLY)
+// LOAD DASHBOARD DATA (DB = TRUTH)
 // -------------------------------------
 async function loadDashboardData() {
     try {
@@ -116,25 +113,6 @@ function updateTable(records) {
             <td>${r.energy}</td>
         </tr>
     `).join('');
-}
-
-// Add newest row instantly (UX only)
-function addTableRow(data) {
-    const tbody = document.getElementById('dataTableBody');
-
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>${data.step}</td>
-        <td>—</td>
-        <td>—</td>
-        <td>${data.energy_mj}</td>
-    `;
-
-    tbody.prepend(row);
-
-    while (tbody.children.length > 10) {
-        tbody.removeChild(tbody.lastChild);
-    }
 }
 
 // -------------------------------------
