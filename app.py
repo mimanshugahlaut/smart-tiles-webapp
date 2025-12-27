@@ -36,7 +36,8 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP
         )
     """)
 
@@ -68,17 +69,27 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email'].lower()
-        password = request.form['password']
-        confirm = request.form['confirm_password']
+        username = request.form.get('username').strip()
+        email = request.form.get('email').strip().lower()
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
 
-        if password != confirm:
-            flash("Passwords do not match", "error")
+        if not username or not email or password != confirm:
+            flash("Invalid input", "error")
             return render_template('register.html')
 
         conn = get_db()
         cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT id FROM users WHERE username=? OR email=?",
+            (username, email)
+        )
+        if cursor.fetchone():
+            conn.close()
+            flash("Username or email already exists", "error")
+            return render_template('register.html')
+
         cursor.execute(
             "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
             (username, email, generate_password_hash(password))
@@ -94,8 +105,8 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        identifier = request.form['username']
-        password = request.form['password']
+        identifier = request.form.get('username').strip().lower()
+        password = request.form.get('password')
 
         conn = get_db()
         cursor = conn.cursor()
@@ -104,13 +115,20 @@ def login():
             (identifier, identifier)
         )
         user = cursor.fetchone()
-        conn.close()
 
         if user and check_password_hash(user['password_hash'], password):
+            cursor.execute(
+                "UPDATE users SET last_login=CURRENT_TIMESTAMP WHERE id=?",
+                (user['id'],)
+            )
+            conn.commit()
+            conn.close()
+
             session['user_id'] = user['id']
             session['username'] = user['username']
             return redirect(url_for('dashboard'))
 
+        conn.close()
         flash("Invalid credentials", "error")
 
     return render_template('login.html')
@@ -140,47 +158,85 @@ def profile():
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT username, email, created_at FROM users WHERE id=?",
-        (session['user_id'],)
-    )
+    cursor.execute("""
+        SELECT username, email, created_at, last_login
+        FROM users WHERE id=?
+    """, (session['user_id'],))
     user = cursor.fetchone()
 
     cursor.execute("""
-        SELECT 
-            COUNT(*) AS total_steps,
-            COALESCE(SUM(energy_generated), 0) AS total_energy
-        FROM energy_data
-        WHERE user_id=?
+        SELECT COUNT(*) AS steps, COALESCE(SUM(energy_generated),0) AS energy
+        FROM energy_data WHERE user_id=?
     """, (session['user_id'],))
     stats = cursor.fetchone()
-
     conn.close()
 
     return render_template(
-        "profile.html",
-        user=user,
-        total_steps=stats["total_steps"],
-        total_energy_mj=round(stats["total_energy"] * 1000, 2)
+        'profile.html',
+        username=user['username'],
+        email=user['email'],
+        created_at=user['created_at'].split(" ")[0],
+        last_login=user['last_login'] or "Never",
+        total_steps=stats['steps'],
+        total_energy=round(stats['energy'] * 1000, 2)
     )
 
 # =====================================================
-# ENERGY SIMULATION
+# Update Profile (FIXED)
+# =====================================================
+@app.route('/update-profile', methods=['POST'])
+def update_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    username = request.form.get('username').strip()
+    email = request.form.get('email').strip().lower()
+
+    if not username or not email:
+        flash("Fields cannot be empty", "error")
+        return redirect(url_for('profile'))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id FROM users
+        WHERE (username=? OR email=?) AND id!=?
+    """, (username, email, session['user_id']))
+
+    if cursor.fetchone():
+        conn.close()
+        flash("Username or email already in use", "error")
+        return redirect(url_for('profile'))
+
+    cursor.execute("""
+        UPDATE users SET username=?, email=? WHERE id=?
+    """, (username, email, session['user_id']))
+
+    conn.commit()
+    conn.close()
+
+    session['username'] = username
+    flash("Profile updated successfully", "success")
+    return redirect(url_for('profile'))
+
+# =====================================================
+# Energy Simulation
 # =====================================================
 @app.route('/simulate-step', methods=['POST'])
 def simulate_step():
     if 'user_id' not in session:
         return jsonify({'success': False}), 401
 
-    force = random.uniform(400, 800)            # Newton
-    displacement = random.uniform(0.002, 0.005) # meters
-    energy_j = force * displacement              # Joules
+    force = random.uniform(400, 800)
+    displacement = random.uniform(0.002, 0.005)
+    energy_j = force * displacement
 
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT COALESCE(MAX(footsteps), 0) FROM energy_data WHERE user_id=?",
+        "SELECT COALESCE(MAX(footsteps),0) FROM energy_data WHERE user_id=?",
         (session['user_id'],)
     )
     step = cursor.fetchone()[0] + 1
@@ -200,7 +256,7 @@ def simulate_step():
     })
 
 # =====================================================
-# DASHBOARD DATA (FINAL & CORRECT)
+# Dashboard Data
 # =====================================================
 @app.route('/get-energy-data')
 def get_energy_data():
@@ -220,29 +276,20 @@ def get_energy_data():
     rows = cursor.fetchall()
 
     cursor.execute("""
-        SELECT 
-            COUNT(*) AS total_steps,
-            COALESCE(SUM(energy_generated), 0) AS total_energy_j
-        FROM energy_data
-        WHERE user_id=?
+        SELECT COUNT(*), COALESCE(SUM(energy_generated),0)
+        FROM energy_data WHERE user_id=?
     """, (session['user_id'],))
-    stats = cursor.fetchone()
-
+    total_steps, total_energy = cursor.fetchone()
     conn.close()
-
-    total_energy_mj = round(stats["total_energy_j"] * 1000, 2)
-    total_energy_wh = round(stats["total_energy_j"] / 3600, 6)
-    avg_energy = round(total_energy_mj / stats["total_steps"], 2) if stats["total_steps"] else 0
-    energy_value = round(total_energy_wh * 8, 2)  # ₹8 per kWh
 
     return jsonify({
         "success": True,
         "statistics": {
-            "total_steps": stats["total_steps"],
-            "total_energy_mj": total_energy_mj,
-            "total_energy_wh": total_energy_wh,
-            "avg_energy": avg_energy,
-            "energy_value_inr": energy_value
+            "total_steps": total_steps,
+            "total_energy_mj": round(total_energy * 1000, 2),
+            "total_energy_wh": round((total_energy * 1000) / 3_600_000, 6),
+            "avg_energy": round((total_energy * 1000) / total_steps, 2) if total_steps else 0,
+            "energy_value_inr": round(((total_energy * 1000) / 3_600_000) * 8, 2)
         },
         "recent_records": [
             {
@@ -255,7 +302,7 @@ def get_energy_data():
     })
 
 # =====================================================
-# CLEAR DATA
+# Clear Data
 # =====================================================
 @app.route('/clear-data', methods=['POST'])
 def clear_data():
