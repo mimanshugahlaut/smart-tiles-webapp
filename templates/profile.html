@@ -2,19 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Profile - Smart Tile System</title>
+    <title>Profile - Smart Tile System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
 
 <nav class="navbar">
     <div class="nav-container">
-        <div class="nav-brand">
-            ⚡ Smart Tile System
-        </div>
+        <div class="nav-brand">⚡ Smart Tile System</div>
         <div class="nav-menu">
-            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-            <a href="{{ url_for('profile') }}" class="nav-link active">Profile</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('profile') }}" class="active">Profile</a>
             <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
         </div>
     </div>
@@ -23,57 +21,60 @@
 <div class="dashboard-container">
     <h1>My Profile</h1>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endwith %}
+    <!-- ================= GRID ================= -->
+    <div class="profile-grid">
 
-    <div class="profile-card">
-        <h2>Account Information</h2>
+        <!-- ===== LEFT: ACCOUNT INFO ===== -->
+        <div class="profile-card">
+            <h2>Account Information</h2>
 
-        <div class="profile-avatar">
-            <div class="avatar-circle">
-                {{ user.username[0]|upper }}
+            <div class="profile-header">
+                <div class="avatar-circle">
+                    {{ username[0].upper() }}
+                </div>
+                <div>
+                    <h3>{{ username }}</h3>
+                    <p>Member since {{ created_at }}</p>
+                </div>
             </div>
-            <div>
-                <h3>{{ user.username }}</h3>
-                <p>Member since {{ user.created_at.split()[0] }}</p>
-            </div>
+
+            <form method="POST" action="{{ url_for('update_profile') }}">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" value="{{ username }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" value="{{ email }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Last Login</label>
+                    <input type="text" value="{{ last_login }}" readonly>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Update Profile
+                </button>
+            </form>
         </div>
 
-        <form method="POST" action="{{ url_for('update_profile') }}">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" value="{{ user.username }}" required>
+        <!-- ===== RIGHT: ENERGY OVERVIEW ===== -->
+        <div class="energy-overview">
+
+            <div class="stat-card">
+                <h3>Total Footsteps</h3>
+                <p class="stat-value">{{ total_steps }}</p>
             </div>
 
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" value="{{ user.email }}" required>
+            <div class="stat-card">
+                <h3>Total Energy</h3>
+                <p class="stat-value">{{ total_energy }} mJ</p>
             </div>
 
-            <div class="form-group">
-                <label>Last Login</label>
-                <input type="text" value="{{ user.last_login or 'N/A' }}" disabled>
-            </div>
-
-            <button type="submit" class="btn btn-primary">
-                Update Profile
-            </button>
-        </form>
-    </div>
-
-    <div class="stats-grid" style="margin-top:30px;">
-        <div class="stat-card">
-            <h3>Total Footsteps</h3>
-            <p class="stat-value">{{ total_steps }}</p>
         </div>
 
-        <div class="stat-card">
-            <h3>Total Energy Generated</h3>
-            <p class="stat-value">{{ total_energy_mj }} mJ</p>
-        </div>
     </div>
 </div>
 

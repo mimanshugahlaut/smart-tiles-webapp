@@ -158,12 +158,14 @@ def profile():
     conn = get_db()
     cursor = conn.cursor()
 
+    # User info
     cursor.execute("""
         SELECT username, email, created_at, last_login
         FROM users WHERE id=?
     """, (session['user_id'],))
     user = cursor.fetchone()
 
+    # Energy stats
     cursor.execute("""
         SELECT COUNT(*) AS steps, COALESCE(SUM(energy_generated),0) AS energy
         FROM energy_data WHERE user_id=?

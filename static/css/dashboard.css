@@ -1121,3 +1121,58 @@ tbody tr:hover {
         display: none;
     }
 }
+/* ================= PROFILE PAGE FIXES ================= */
+
+/* Fix profile header alignment */
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Reuse avatar-info style safely */
+.profile-header h3 {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.profile-header p {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* Energy overview RIGHT side */
+.energy-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Match dashboard stat cards visually */
+.energy-overview .stat-card {
+    padding: 24px;
+}
+
+/* Nav active state fix */
+.nav-menu a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-menu a:hover {
+    color: var(--text-primary);
+    background: var(--bg-main);
+}
+
+.nav-menu a.active {
+    color: var(--primary);
+    background: rgba(102, 126, 234, 0.12);
+}
