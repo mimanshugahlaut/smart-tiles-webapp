@@ -137,9 +137,9 @@ def simulate_step():
     if 'user_id' not in session:
         return jsonify({'success': False}), 401
 
-    force = random.uniform(400, 800)
-    displacement = random.uniform(0.002, 0.005)
-    energy = force * displacement
+    force = random.uniform(400, 800)              # Newton
+    displacement = random.uniform(0.002, 0.005)   # meters
+    energy_j = force * displacement                # Joules
 
     conn = get_db()
     cursor = conn.cursor()
@@ -153,7 +153,7 @@ def simulate_step():
     cursor.execute("""
         INSERT INTO energy_data (user_id, footsteps, force, displacement, energy_generated)
         VALUES (?, ?, ?, ?, ?)
-    """, (session['user_id'], step, force, displacement, energy))
+    """, (session['user_id'], step, force, displacement, energy_j))
 
     conn.commit()
     conn.close()
@@ -161,11 +161,11 @@ def simulate_step():
     return jsonify({
         "success": True,
         "step": step,
-        "energy_mj": round(energy * 1000, 2)
+        "energy_mj": round(energy_j * 1000, 2)
     })
 
 # =====================================================
-# DASHBOARD DATA (BUG-2 FIX)
+# DASHBOARD DATA (FINAL, CORRECT)
 # =====================================================
 @app.route('/get-energy-data')
 def get_energy_data():
@@ -179,40 +179,43 @@ def get_energy_data():
         SELECT footsteps, timestamp, force, displacement, energy_generated
         FROM energy_data
         WHERE user_id=?
-        ORDER BY id DESC
+        ORDER BY footsteps DESC
         LIMIT 10
     """, (session['user_id'],))
     rows = cursor.fetchall()
 
     cursor.execute("""
-        SELECT
-            COUNT(*),
-            COALESCE(SUM(energy_generated),0),
-            COALESCE(AVG(energy_generated),0)
+        SELECT 
+            COUNT(*) AS total_steps,
+            COALESCE(SUM(energy_generated), 0) AS total_energy_j
         FROM energy_data
         WHERE user_id=?
     """, (session['user_id'],))
-    total_steps, total_energy, avg_energy = cursor.fetchone()
+    stats = cursor.fetchone()
     conn.close()
 
-    records = [{
-        "step": r["footsteps"],
-        "time": r["timestamp"],
-        "force": round(r["force"], 2),
-        "displacement": round(r["displacement"] * 1000, 3),
-        "energy": round(r["energy_generated"] * 1000, 2)
-    } for r in rows]
+    total_energy_mj = round(stats["total_energy_j"] * 1000, 2)
+    total_energy_wh = round(total_energy_mj / 3_600_000, 6)
+    avg_energy = round(total_energy_mj / stats["total_steps"], 2) if stats["total_steps"] else 0
+    energy_value = round((total_energy_wh / 1000) * 8, 2)  # ₹8/kWh
 
     return jsonify({
         "success": True,
         "statistics": {
-            "total_steps": total_steps,
-            "total_energy_mj": round(total_energy * 1000, 2),
-            "total_energy_wh": round(total_energy / 3.6, 4),
-            "avg_energy": round(avg_energy * 1000, 2),
-            "energy_value_inr": round((total_energy / 3600) * 8, 2)
+            "total_steps": stats["total_steps"],
+            "total_energy_mj": total_energy_mj,
+            "total_energy_wh": total_energy_wh,
+            "avg_energy": avg_energy,
+            "energy_value_inr": energy_value
         },
-        "recent_records": records
+        "recent_records": [
+            {
+                "step": r["footsteps"],
+                "force": round(r["force"], 2),
+                "displacement": round(r["displacement"] * 1000, 3),
+                "energy": round(r["energy_generated"] * 1000, 2)
+            } for r in rows
+        ]
     })
 
 # =====================================================
