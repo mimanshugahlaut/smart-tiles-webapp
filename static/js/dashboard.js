@@ -1,6 +1,6 @@
 // =====================================
 // Smart Tile Dashboard (NO GRAPH VERSION)
-// Stable, Fast, Demo-Ready
+// Stable, Backend-Synced, Demo-Ready
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // -------------------------------------
-// SIMULATE FOOTSTEP
+// SIMULATE FOOTSTEP (NO FRONTEND MATH)
 // -------------------------------------
 async function simulateFootstep() {
     const btn = document.getElementById('simulateBtn');
-    const original = btn.innerText;
+    const originalText = btn.innerText;
 
     try {
         btn.disabled = true;
@@ -29,7 +29,10 @@ async function simulateFootstep() {
             return;
         }
 
-        incrementStats(data.energy_mj);
+        // ✅ Always reload backend data (single source of truth)
+        await loadDashboardData();
+
+        // Add latest row instantly for UX
         addTableRow(data);
 
         showNotification(
@@ -37,16 +40,17 @@ async function simulateFootstep() {
             `⚡ Step ${data.step} → ${data.energy_mj} mJ`
         );
 
-    } catch {
+    } catch (err) {
+        console.error(err);
         showNotification('error', 'Server error');
     } finally {
         btn.disabled = false;
-        btn.innerText = original;
+        btn.innerText = originalText;
     }
 }
 
 // -------------------------------------
-// LOAD DASHBOARD DATA
+// LOAD DASHBOARD DATA (BACKEND ONLY)
 // -------------------------------------
 async function loadDashboardData() {
     try {
@@ -58,13 +62,19 @@ async function loadDashboardData() {
         updateStatistics(data.statistics);
         updateTable(data.recent_records);
 
-    } catch {
-        showNotification('error', 'Failed to load data');
+        const recordCount = document.getElementById('recordCount');
+        if (recordCount) {
+            recordCount.textContent = `${data.statistics.total_steps} records`;
+        }
+
+    } catch (err) {
+        console.error(err);
+        showNotification('error', 'Failed to load dashboard data');
     }
 }
 
 // -------------------------------------
-// STATS
+// STATISTICS (BACKEND VALUES ONLY)
 // -------------------------------------
 function updateStatistics(stats) {
     document.getElementById('totalEnergy').textContent =
@@ -86,28 +96,21 @@ function updateStatistics(stats) {
         `₹${stats.energy_value_inr}`;
 }
 
-function incrementStats(energy) {
-    const el = document.getElementById('totalEnergy');
-    const current = parseFloat(el.textContent) || 0;
-    el.textContent = `${(current + energy).toFixed(2)} mJ`;
-}
-
 // -------------------------------------
-// TABLE
+// TABLE (RECENT FOOTSTEPS)
 // -------------------------------------
 function updateTable(records) {
     const tbody = document.getElementById('dataTableBody');
 
-    if (!records.length) {
+    if (!records || records.length === 0) {
         tbody.innerHTML =
-            `<tr><td colspan="5">No data yet</td></tr>`;
+            `<tr><td colspan="4">No data yet. Click "Simulate Footstep".</td></tr>`;
         return;
     }
 
     tbody.innerHTML = records.slice(0, 10).map(r => `
         <tr>
             <td>${r.step}</td>
-            <td>${new Date(r.time).toLocaleTimeString()}</td>
             <td>${r.force}</td>
             <td>${r.displacement}</td>
             <td>${r.energy}</td>
@@ -115,19 +118,20 @@ function updateTable(records) {
     `).join('');
 }
 
+// Add newest row instantly (UX only)
 function addTableRow(data) {
     const tbody = document.getElementById('dataTableBody');
-    const row = document.createElement('tr');
 
+    const row = document.createElement('tr');
     row.innerHTML = `
         <td>${data.step}</td>
-        <td>Just now</td>
         <td>—</td>
         <td>—</td>
         <td>${data.energy_mj}</td>
     `;
 
     tbody.prepend(row);
+
     while (tbody.children.length > 10) {
         tbody.removeChild(tbody.lastChild);
     }
@@ -137,23 +141,31 @@ function addTableRow(data) {
 // CLEAR DATA
 // -------------------------------------
 async function clearAllData() {
-    if (!confirm('Clear all data?')) return;
+    if (!confirm('Are you sure you want to clear all data?')) return;
 
-    await fetch('/clear-data', { method: 'POST' });
+    try {
+        await fetch('/clear-data', { method: 'POST' });
+        await loadDashboardData();
 
-    document.getElementById('dataTableBody').innerHTML =
-        `<tr><td colspan="5">No data</td></tr>`;
+        showNotification('success', 'All data cleared');
 
-    showNotification('success', 'All data cleared');
+    } catch (err) {
+        console.error(err);
+        showNotification('error', 'Failed to clear data');
+    }
 }
 
 // -------------------------------------
-// NOTIFICATION
+// NOTIFICATIONS
 // -------------------------------------
 function showNotification(type, message) {
-    const n = document.createElement('div');
-    n.className = `notification ${type}`;
-    n.textContent = message;
-    document.body.appendChild(n);
-    setTimeout(() => n.remove(), 2500);
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 2500);
 }
