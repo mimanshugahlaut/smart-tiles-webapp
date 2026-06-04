@@ -1,0 +1,54 @@
+<!-- nav.html — Reusable navbar partial -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="nav-container">
+
+    <!-- Brand -->
+    <a href="{{ url_for('dashboard') }}" class="nav-brand">
+      <div class="nav-logo-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" class="logo-bolt"/>
+        </svg>
+      </div>
+      <span>Smart Tiles</span>
+    </a>
+
+    <!-- Nav Links -->
+    <div class="nav-links" role="list">
+      <a href="{{ url_for('dashboard') }}"
+         class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+         role="listitem">
+        Dashboard
+      </a>
+      <a href="{{ url_for('profile') }}"
+         class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}"
+         role="listitem">
+        Profile
+      </a>
+      <a href="{{ url_for('settings') }}"
+         class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}"
+         role="listitem">
+        Settings
+      </a>
+    </div>
+
+    <!-- Right side: user + logout -->
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" aria-hidden="true">
+          {{ session.get('username', 'U')[0].upper() }}
+        </div>
+        <span style="font-size:0.8rem;color:var(--text-secondary);display:none;" id="navUsername">
+          {{ session.get('username', '') }}
+        </span>
+      </div>
+      <a href="{{ url_for('logout') }}" class="nav-logout" id="navLogout">Logout</a>
+    </div>
+
+  </div>
+</nav>
+
+<style>
+@media (min-width: 640px) {
+  #navUsername { display: inline !important; }
+}
+</style>

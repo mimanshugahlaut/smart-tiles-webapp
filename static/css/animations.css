@@ -1,0 +1,210 @@
+/* =====================================================
+   animations.css — Smart Tiles Animation Library
+   ===================================================== */
+
+/* --- Keyframe Definitions --- */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(100px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.15); }
+  50%       { box-shadow: 0 0 30px rgba(0, 240, 255, 0.35), 0 0 60px rgba(0, 240, 255, 0.1); }
+}
+
+@keyframes pulse-purple {
+  0%, 100% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.2); }
+  50%       { box-shadow: 0 0 30px rgba(124, 58, 237, 0.5); }
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); }
+  50%       { box-shadow: 0 0 25px rgba(16, 185, 129, 0.35); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes particle-drift {
+  0%   { opacity: 0; transform: translateY(0) rotate(0deg); }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-100vh) rotate(720deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes energy-ripple {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes lightning-stroke {
+  0%, 90%, 100% { opacity: 1; }
+  92%, 98%      { opacity: 0.3; }
+  94%, 96%      { opacity: 0.9; }
+}
+
+@keyframes counter-roll {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%      { transform: scale(1.05); }
+  28%      { transform: scale(1); }
+  42%      { transform: scale(1.05); }
+  70%      { transform: scale(1); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* --- Particle Background Particles --- */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle:nth-child(1)  { width: 3px; height: 3px; left: 10%; background: var(--cyan);   opacity: 0.6; animation: particle-drift 12s linear 0s infinite; }
+.particle:nth-child(2)  { width: 2px; height: 2px; left: 25%; background: var(--purple); opacity: 0.5; animation: particle-drift 18s linear 2s infinite; }
+.particle:nth-child(3)  { width: 4px; height: 4px; left: 40%; background: var(--cyan);   opacity: 0.4; animation: particle-drift 14s linear 4s infinite; }
+.particle:nth-child(4)  { width: 2px; height: 2px; left: 55%; background: var(--green);  opacity: 0.5; animation: particle-drift 20s linear 1s infinite; }
+.particle:nth-child(5)  { width: 3px; height: 3px; left: 70%; background: var(--purple); opacity: 0.6; animation: particle-drift 16s linear 6s infinite; }
+.particle:nth-child(6)  { width: 2px; height: 2px; left: 85%; background: var(--cyan);   opacity: 0.4; animation: particle-drift 13s linear 3s infinite; }
+.particle:nth-child(7)  { width: 3px; height: 3px; left: 15%; background: var(--gold);   opacity: 0.3; animation: particle-drift 22s linear 7s infinite; }
+.particle:nth-child(8)  { width: 2px; height: 2px; left: 35%; background: var(--cyan);   opacity: 0.5; animation: particle-drift 17s linear 5s infinite; }
+.particle:nth-child(9)  { width: 4px; height: 4px; left: 60%; background: var(--purple); opacity: 0.3; animation: particle-drift 19s linear 8s infinite; }
+.particle:nth-child(10) { width: 2px; height: 2px; left: 78%; background: var(--green);  opacity: 0.4; animation: particle-drift 15s linear 2s infinite; }
+.particle:nth-child(11) { width: 3px; height: 3px; left: 92%; background: var(--cyan);   opacity: 0.5; animation: particle-drift 21s linear 9s infinite; }
+.particle:nth-child(12) { width: 2px; height: 2px; left: 5%;  background: var(--purple); opacity: 0.3; animation: particle-drift 24s linear 4s infinite; }
+
+/* --- Energy Ripple on Simulate Button --- */
+.simulate-btn-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.simulate-btn-wrap .ripple-ring {
+  position: absolute;
+  inset: -8px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.simulate-btn-wrap.pulsing .ripple-ring {
+  animation: energy-ripple 0.6s ease-out forwards;
+}
+
+/* --- Card stagger entrance --- */
+.card-enter {
+  animation: fadeInUp 0.5s ease both;
+}
+.card-enter:nth-child(1) { animation-delay: 0ms; }
+.card-enter:nth-child(2) { animation-delay: 80ms; }
+.card-enter:nth-child(3) { animation-delay: 160ms; }
+.card-enter:nth-child(4) { animation-delay: 240ms; }
+.card-enter:nth-child(5) { animation-delay: 320ms; }
+
+/* --- Loading Spinner --- */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(0,0,0,0.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.spinner-light {
+  border-color: rgba(255,255,255,0.2);
+  border-top-color: #fff;
+}
+
+/* --- Shimmer Loading Skeleton --- */
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.1) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+/* --- Logo Lightning Animation --- */
+.logo-bolt {
+  animation: lightning-stroke 4s ease infinite;
+  filter: drop-shadow(0 0 6px var(--cyan));
+}
+
+/* --- Stat value animation --- */
+.stat-value-animate {
+  animation: counter-roll 0.4s ease;
+}
+
+/* --- Gradient text animation --- */
+.grad-text-animated {
+  background: linear-gradient(270deg, var(--cyan), var(--purple), var(--green), var(--cyan));
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* --- Glow pulse classes --- */
+.glow-cyan   { animation: pulse-glow   3s ease infinite; }
+.glow-purple { animation: pulse-purple 3s ease infinite; }
+.glow-green  { animation: pulse-green  3s ease infinite; }
+
+/* --- Float animation --- */
+.float-anim { animation: float 4s ease-in-out infinite; }

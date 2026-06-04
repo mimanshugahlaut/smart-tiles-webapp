@@ -1,82 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Profile - Smart Tile System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<nav class="navbar">
-    <div class="nav-container">
-        <div class="nav-brand">⚡ Smart Tile System</div>
-        <div class="nav-menu">
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('profile') }}" class="active">Profile</a>
-            <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
-        </div>
+{% block title %}Profile{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+{% include 'nav.html' %}
+
+<div class="page-wrapper">
+  <div class="page-container">
+
+    <!-- Page Title -->
+    <div class="page-title-section">
+      <h1>My Profile</h1>
+      <p>Manage your account information and view your energy stats</p>
     </div>
-</nav>
 
-<div class="dashboard-container">
-    <h1>My Profile</h1>
+    <!-- Flash messages (inline, above grid) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" role="alert" style="margin-bottom:1.5rem;">
+            {% if category == 'success' %}✓{% elif category == 'error' %}✕{% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-    <!-- ================= GRID ================= -->
+    <!-- Profile Grid -->
     <div class="profile-grid">
 
-        <!-- ===== LEFT: ACCOUNT INFO ===== -->
-        <div class="profile-card">
-            <h2>Account Information</h2>
+      <!-- ===== LEFT: Account Info ===== -->
+      <div class="profile-account-card">
+        <h2>Account Information</h2>
 
-            <div class="profile-header">
-                <div class="avatar-circle">
-                    {{ username[0].upper() }}
-                </div>
-                <div>
-                    <h3>{{ username }}</h3>
-                    <p>Member since {{ created_at }}</p>
-                </div>
-            </div>
-
-            <form method="POST" action="{{ url_for('update_profile') }}">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" value="{{ username }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" name="email" value="{{ email }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Last Login</label>
-                    <input type="text" value="{{ last_login }}" readonly>
-                </div>
-
-                <button type="submit" class="btn btn-primary">
-                    Update Profile
-                </button>
-            </form>
+        <!-- Avatar + Name Row -->
+        <div class="profile-avatar-row">
+          <div class="avatar-lg" aria-hidden="true">{{ username[0].upper() }}</div>
+          <div class="profile-avatar-name">
+            <h3>{{ username }}</h3>
+            <p>Member since {{ created_at }}</p>
+          </div>
         </div>
 
-        <!-- ===== RIGHT: ENERGY OVERVIEW ===== -->
-        <div class="energy-overview">
+        <!-- Edit Form -->
+        <form method="POST" action="{{ url_for('update_profile') }}" id="profileForm" novalidate>
 
-            <div class="stat-card">
-                <h3>Total Footsteps</h3>
-                <p class="stat-value">{{ total_steps }}</p>
-            </div>
+          <div class="form-group">
+            <label class="form-label" for="profileUsername">Username</label>
+            <input
+              type="text"
+              id="profileUsername"
+              name="username"
+              class="form-input"
+              value="{{ username }}"
+              required
+              minlength="3"
+              autocomplete="username">
+          </div>
 
-            <div class="stat-card">
-                <h3>Total Energy</h3>
-                <p class="stat-value">{{ total_energy }} mJ</p>
-            </div>
+          <div class="form-group">
+            <label class="form-label" for="profileEmail">Email Address</label>
+            <input
+              type="email"
+              id="profileEmail"
+              name="email"
+              class="form-input"
+              value="{{ email }}"
+              required
+              autocomplete="email">
+          </div>
 
+          <div class="form-group">
+            <label class="form-label">Last Login</label>
+            <input type="text" class="form-input" value="{{ last_login }}" readonly>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Save Changes
+          </button>
+
+        </form>
+      </div>
+
+      <!-- ===== RIGHT: Energy Stats ===== -->
+      <div class="profile-stats-col">
+
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon steps">👣</div>
+          <div class="profile-stat-info">
+            <div class="profile-stat-label">Total Footsteps</div>
+            <div class="profile-stat-value purple">{{ total_steps }}</div>
+          </div>
         </div>
 
-    </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon energy">⚡</div>
+          <div class="profile-stat-info">
+            <div class="profile-stat-label">Total Energy Generated</div>
+            <div class="profile-stat-value cyan">{{ total_energy }} mJ</div>
+          </div>
+        </div>
+
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon login">🕐</div>
+          <div class="profile-stat-info">
+            <div class="profile-stat-label">Last Login</div>
+            <div class="profile-stat-value green" style="font-size:1rem;">{{ last_login }}</div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">
+            📊 Go to Dashboard
+          </a>
+          <a href="{{ url_for('settings') }}" class="btn btn-ghost btn-sm">
+            ⚙️ Settings
+          </a>
+        </div>
+
+      </div><!-- /profile-stats-col -->
+    </div><!-- /profile-grid -->
+  </div>
 </div>
+{% endblock %}
 
-</body>
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

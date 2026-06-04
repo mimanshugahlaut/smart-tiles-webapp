@@ -1,79 +1,182 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Smart Tile System</title>
+{% extends "base.html" %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body>
+{% block title %}Settings{% endblock %}
 
-    <!-- ================= NAVBAR ================= -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <svg class="nav-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-                <span>Smart Tile System</span>
-            </div>
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 
-            <div class="nav-menu">
-                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </nav>
+{% block content %}
+{% include 'nav.html' %}
 
-    <!-- ================= CONTENT ================= -->
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1>Settings</h1>
-            <p>Account preferences (feature coming soon)</p>
-        </div>
+<div class="page-wrapper">
+  <div class="page-container">
 
-        <div class="settings-grid">
-
-            <!-- Account Info -->
-            <div class="settings-card">
-                <h2>Account</h2>
-                <p>
-                    User account management features such as profile editing,
-                    password change, and notifications will be added in a future update.
-                </p>
-            </div>
-
-            <!-- Security -->
-            <div class="settings-card">
-                <h2>Security</h2>
-                <p>
-                    Advanced security options like password reset and account deletion
-                    are currently under development.
-                </p>
-            </div>
-
-            <!-- Notifications -->
-            <div class="settings-card">
-                <h2>Notifications</h2>
-                <p>
-                    Email alerts and energy reports will be configurable once backend
-                    support is enabled.
-                </p>
-            </div>
-
-            <!-- Status -->
-            <div class="settings-card">
-                <h2>System Status</h2>
-                <ul>
-                    <li>✔ Simulation Mode: Active</li>
-                    <li>✔ Database: Connected</li>
-                    <li>✔ User Session: Active</li>
-                </ul>
-            </div>
-
-        </div>
+    <!-- Page Title -->
+    <div class="page-title-section">
+      <h1>Settings</h1>
+      <p>Manage your account security and preferences</p>
     </div>
 
-</body>
-</html>
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" role="alert" style="margin-bottom:1.5rem;">
+            {% if category == 'success' %}✓{% elif category == 'error' %}✕{% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="settings-grid">
+
+      <!-- ===== Change Password ===== -->
+      <div class="settings-card" style="grid-column: 1 / -1; max-width: 560px;">
+        <div class="settings-card-header">
+          <div class="settings-card-icon security">🔐</div>
+          <div>
+            <div class="settings-card-title">Change Password</div>
+            <div class="settings-card-subtitle">Update your account password</div>
+          </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('change_password') }}" id="changePasswordForm" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="current_password">Current Password</label>
+            <input
+              type="password"
+              id="current_password"
+              name="current_password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new_password">New Password</label>
+            <input
+              type="password"
+              id="new_password"
+              name="new_password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+              minlength="6"
+              autocomplete="new-password">
+            <!-- Password strength -->
+            <div class="password-strength-wrap" id="settingsStrengthWrap" style="display:none;">
+              <div class="strength-bar-track">
+                <div class="strength-bar-fill" id="settingsStrengthBar"></div>
+              </div>
+              <span class="strength-label" id="settingsStrengthLabel">Enter a password</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirm New Password</label>
+            <input
+              type="password"
+              id="confirm_password"
+              name="confirm_password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+              autocomplete="new-password">
+            <span class="match-indicator" id="settingsMatchIndicator"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="changePwBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Update Password
+          </button>
+
+        </form>
+      </div>
+
+      <!-- ===== System Status ===== -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon status">📡</div>
+          <div>
+            <div class="settings-card-title">System Status</div>
+            <div class="settings-card-subtitle">Current system health</div>
+          </div>
+        </div>
+
+        <div class="status-list">
+          <div class="status-item">
+            <span class="status-item-label">
+              <span class="status-dot active"></span>
+              Simulation Mode
+            </span>
+            <span class="status-badge active">Active</span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">
+              <span class="status-dot active"></span>
+              Database Connection
+            </span>
+            <span class="status-badge active">Connected</span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">
+              <span class="status-dot active"></span>
+              User Session
+            </span>
+            <span class="status-badge active">Active</span>
+          </div>
+          <div class="status-item">
+            <span class="status-item-label">
+              <span class="status-dot inactive"></span>
+              Email Service
+            </span>
+            <span class="status-badge warning">Dev Mode</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+          <p style="font-size:0.75rem;color:var(--text-muted);">
+            Logged in as <strong style="color:var(--text-secondary);">{{ username }}</strong><br>
+            Energy records: <strong style="color:var(--cyan);">{{ step_count }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- ===== Danger Zone ===== -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon danger">⚠️</div>
+          <div>
+            <div class="settings-card-title">Danger Zone</div>
+            <div class="settings-card-subtitle">Irreversible actions</div>
+          </div>
+        </div>
+
+        <div class="danger-zone-content">
+          <div class="danger-item">
+            <div class="danger-item-text">
+              <strong>Clear Energy Data</strong>
+              <p>Delete all {{ step_count }} energy records permanently.</p>
+            </div>
+            <button class="btn btn-danger btn-sm" id="clearDataBtn">
+              🗑️ Clear Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-grid -->
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

@@ -1,123 +1,145 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Smart Tile System</title>
+{% extends "base.html" %}
 
-    <!-- Dashboard CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body>
+{% block title %}Dashboard{% endblock %}
 
-    <!-- ================= NAVBAR ================= -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <svg class="nav-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-                <span>Smart Tile System</span>
-            </div>
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
 
-            <div class="nav-menu">
-                <a href="{{ url_for('dashboard') }}" class="nav-link active">Dashboard</a>
-                <a href="{{ url_for('profile') }}" class="nav-link">Profile</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
-            </div>
-        </div>
-    </nav>
+{% block content %}
+{% include 'nav.html' %}
 
-    <!-- ================= DASHBOARD ================= -->
-    <div class="dashboard-container">
+<div class="page-wrapper">
+  <div class="page-container">
 
-        <!-- Header -->
-        <div class="dashboard-header">
-            <div>
-                <h1>Energy Dashboard</h1>
-                <p>Monitor your piezoelectric tile performance (Simulation Mode)</p>
-            </div>
+    <!-- ===== PAGE HEADER ===== -->
+    <div class="dash-header">
+      <div class="dash-header-text">
+        <h1>Energy Dashboard</h1>
+        <p id="dashGreeting">Monitor your piezoelectric tile performance — Simulation Mode</p>
+      </div>
+      <div class="dash-header-actions">
+        <button class="btn btn-ghost btn-sm" id="refreshBtn" title="Refresh data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.91"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
 
-            <div class="dashboard-actions">
-                <button id="simulateBtn" class="btn btn-primary">
-                    ⚡ Simulate Footstep
-                </button>
+    <!-- ===== STATS GRID ===== -->
+    <div class="stats-grid" id="statsGrid">
 
-                <button id="clearDataBtn" class="btn btn-secondary">
-                    🗑️ Clear Data
-                </button>
-            </div>
-        </div>
+      <div class="stat-card energy card-enter">
+        <div class="stat-icon-wrap energy">⚡</div>
+        <div class="stat-label">Total Energy</div>
+        <div class="stat-value" id="statTotalEnergy">0.00 mJ</div>
+        <div class="stat-sub" id="statEnergyWh">0.00000000 Wh</div>
+      </div>
 
-        <!-- ================= STATS ================= -->
-        <div class="stats-grid">
+      <div class="stat-card steps card-enter">
+        <div class="stat-icon-wrap steps">👣</div>
+        <div class="stat-label">Total Footsteps</div>
+        <div class="stat-value" id="statTotalSteps">0</div>
+        <div class="stat-sub" id="statStepsSub">Start stepping!</div>
+      </div>
 
-            <div class="stat-card">
-                <div class="stat-icon energy">⚡</div>
-                <div class="stat-content">
-                    <h3>Total Energy</h3>
-                    <p class="stat-value" id="totalEnergy">0.00 mJ</p>
-                    <span class="stat-change" id="energyWh">0.0000 Wh</span>
-                </div>
-            </div>
+      <div class="stat-card efficiency card-enter">
+        <div class="stat-icon-wrap efficiency">📊</div>
+        <div class="stat-label">Avg Energy / Step</div>
+        <div class="stat-value" id="statAvgEnergy">0.00 mJ</div>
+        <div class="stat-sub">Efficiency metric</div>
+      </div>
 
-            <div class="stat-card">
-                <div class="stat-icon steps">👣</div>
-                <div class="stat-content">
-                    <h3>Total Footsteps</h3>
-                    <p class="stat-value" id="stepsToday">0</p>
-                    <span class="stat-change" id="totalSteps">Start stepping!</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon avg">📊</div>
-                <div class="stat-content">
-                    <h3>Avg Energy / Step</h3>
-                    <p class="stat-value" id="avgEnergy">0.00 mJ</p>
-                    <span class="stat-change">Efficiency</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon value">₹</div>
-                <div class="stat-content">
-                    <h3>Energy Value</h3>
-                    <p class="stat-value" id="energyValue">₹0.00</p>
-                    <span class="stat-change">@ ₹8/kWh</span>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ================= TABLE ================= -->
-        <div class="data-table-card">
-            <div class="card-header">
-                <h2>Recent Footsteps</h2>
-                <span id="recordCount">0 records</span>
-            </div>
-
-            <table id="dataTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Force (N)</th>
-                        <th>Displacement (mm)</th>
-                        <th>Energy (mJ)</th>
-                    </tr>
-                </thead>
-                <tbody id="dataTableBody">
-                    <tr>
-                        <td colspan="4">No data yet. Click "Simulate Footstep".</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+      <div class="stat-card value card-enter">
+        <div class="stat-icon-wrap value">₹</div>
+        <div class="stat-label">Energy Value</div>
+        <div class="stat-value" id="statEnergyValue">₹0.000000</div>
+        <div class="stat-sub">@ ₹8 / kWh</div>
+      </div>
 
     </div>
 
-    <!-- Dashboard JS -->
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <!-- ===== SIMULATE SECTION ===== -->
+    <div class="simulate-section">
+      <h3>⚡ Simulate a Footstep</h3>
+      <p>Click to simulate a footstep on the piezoelectric tile and see real-time energy generation.</p>
 
-</body>
-</html>
+      <button class="btn-simulate" id="simulateBtn" aria-label="Simulate footstep">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        Step on Tile
+      </button>
+
+      <div class="simulate-result" id="simulateResult"></div>
+
+      <button class="btn btn-ghost btn-sm" id="clearDataBtn" style="margin-top:0.5rem;">
+        🗑️ Clear All Data
+      </button>
+    </div>
+
+    <!-- ===== CHART ===== -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2>Energy Production History</h2>
+        <div class="chart-legend">
+          <div class="chart-legend-item">
+            <div class="legend-dot cyan"></div>
+            <span>Energy (mJ)</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="energyChart"></canvas>
+        <div class="chart-empty" id="chartEmpty" style="display:none;">
+          <span class="chart-empty-icon">📈</span>
+          <span>No data yet — simulate some footsteps!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DATA TABLE ===== -->
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Recent Footsteps</h2>
+        <span class="record-badge" id="recordBadge">0 records</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="dataTable" aria-label="Recent footstep data">
+          <thead>
+            <tr>
+              <th>Step #</th>
+              <th>Force (N)</th>
+              <th>Displacement (mm)</th>
+              <th>Energy (mJ)</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row">
+              <td colspan="5">No data yet. Click "Step on Tile" above to get started!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /page-container -->
+</div><!-- /page-wrapper -->
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, {{ username }} — Simulation Mode Active`;
+</script>
+{% endblock %}
